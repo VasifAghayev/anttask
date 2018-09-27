@@ -3,3 +3,9 @@
 $ git clone https://github.com/VasifAghayev/anttask.git && cd anttask
 $ vagrant up
 ```
+
+##### To initialize Jenkins at the first time just to to the inside of the Linux machine and get password from 'initialAdminPassword' file:
+```bash
+$ vagrant ssh
+$ sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+```
