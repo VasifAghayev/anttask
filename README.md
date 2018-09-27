@@ -9,3 +9,11 @@ $ vagrant up
 $ vagrant ssh
 $ sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
+
+##### In the http://10.100.1.201:8080 URL input this password from previous command and create your admin account.
+
+##### At the end just restart Jenkins service in the Linux console and run ANT job in the Jenkins console:
+```bash
+$ sudo systemctl restart jenkins
+```
+
