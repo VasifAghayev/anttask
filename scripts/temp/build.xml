@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="jSudokuJar" basedir="." default="stoprecorder">
+        <target name="init" description="Initializes properties">
+                <tstamp />
+                <property file="build.properties" />
+        </target>
+	
+	<macrodef name = "git">
+    		<attribute name = "command" />
+    		<attribute name = "dir" default = "" />
+    		<element name = "args" optional = "true" />
+    		<sequential>
+        		<echo message = "git @{command}" />
+        		<exec executable = "git" dir = "@{dir}">
+            			<arg value = "@{command}" />
+            			<args/>
+       			 </exec>
+    		</sequential>
+	</macrodef>
+	<macrodef name = "git-clone-pull">
+    		<attribute name = "repository" />
+    		<attribute name = "dest" />
+    		<sequential>
+        		<git command = "clone">
+            			<args>
+                			<arg value = "@{repository}" />
+                		<arg value = "@{dest}" />
+            			</args>
+			</git>
+        		<git command = "pull" dir = "@{dest}" />
+    		</sequential>
+	</macrodef>
+
+        <target name="startrecorder">
+		<record name="${name}-${DSTAMP}-log.txt"
+			action="start"
+			append="false" />
+	</target>
+		
+	<target name="prepare" description="Creates the build and classes directories" depends="init, startrecorder">
+                <mkdir dir="${build.dir.classes}" />
+		<mkdir dir="${reports.dir}" />
+	</target>
+
+	<target name="fetch" depends="prepare">
+		<git-clone-pull repository="repo" dest="src" />
+		<!--
+		<git command = "clone">
+    			<args>
+        			<arg value = "git://github.com/VasifAghayev/jsud.git" />
+				<arg value = "src" />
+    			</args>
+		</git>
+		-->
+	</target>
+
+        <target name="compile" description="Compiles the code" depends="fetch">
+                <javac srcdir="${src.dir}"
+                       destdir="${build.dir.classes}"
+		       compiler="${build.compiler}" 
+		       debug="on"
+		       includeantruntime="false" />
+        </target>
+
+		
+        <target name="jarfile" description="JARs the code" depends="compile">
+                <jar destfile="${build.dir}/${jar.name}"
+                     basedir="${build.dir.classes}"
+                     manifest="${etc.dir}/MANIFEST.MF" />
+    	</target>
+        
+	<target name="test" depends="jarfile">
+        	<junit printsummary="on" haltonfailure="yes" fork="true">
+            		<classpath>
+                		<fileset dir="${lib.dir}" includes="**/*.jar"/>
+				<path location="${build.dir}/${jar.name}"/>
+                		<pathelement location="${build.dir.classes}"/>
+            		</classpath>
+            		<formatter type="xml" />
+            		<batchtest fork="yes" todir="${reports.dir}/">
+                		<fileset dir="${src.dir}" includes="**/*Test.java" />
+            		</batchtest>
+		</junit>
+		<junitreport todir="${reports.dir}">
+			<fileset dir="${reports.dir}" includes="TEST-*.xml" />
+			<report format="noframes" todir="${reports.dir}" />
+		</junitreport>
+	</target>
+
+	<!-- Defining checkstyle -->
+	<target name="checkstyle"
+    		description="Generates a report of code convention violations."
+    		depends="init-checkstyle">
+    		<checkstyle config="cslib/sun_checks.xml" failureProperty="checkstyle.failure" failOnViolation="false">
+			<formatter type="xml" tofile="checkstyle_report.xml"/>
+			<fileset dir="src" includes="**/*.java"/>
+    		</checkstyle>
+	</target>
+
+	<target name="init-checkstyle">
+		<path id="checkstyle.lib.path">
+			<fileset dir="cslib" includes="*.jar"/>
+    		</path>
+    		<taskdef resource="com/puppycrawl/tools/checkstyle/ant/checkstyle-ant-task.properties" classpathref="checkstyle.lib.path"/>
+	</target>
+	<!-- End of Checkstyle -->
+	
+	<path id="pmd.classpath">
+    		<fileset dir="pmd/lib/">
+        		<include name="*.jar"/>
+    		</fileset>
+	</path>
+
+	<taskdef name="pmd" classname="net.sourceforge.pmd.ant.PMDTask" classpathref="pmd.classpath"/>
+
+	<target name="pmd">
+		<pmd rulesetfiles="category/java/codestyle.xml">
+          		<formatter type="net.sourceforge.pmd.renderers.HTMLRenderer" toFile="foo.html"/>
+          		<fileset dir="src">
+              			<include name="**/*.java"/>
+          		</fileset>
+      		</pmd>
+  	</target>
+
+
+	<target name="stoprecorder" depends="test">
+		<record name="${name}-${DSTAMP}-log.txt"
+			action="stop" />
+	</target>
+		
+        <target name="clean" description="Delete the build and reports directories" depends="init">
+                <delete dir="${build.dir}" />
+		<delete dir="${reports.dir}" />
+        </target>
+
+</project>
